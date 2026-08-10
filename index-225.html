@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دراميتك | Dramatek - عالم قصص الذكاء الاصطناعي</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Arabic -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            400: '#facc15',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                            700: '#a16207',
+                        },
+                        darkBg: '#0b0b0d',
+                        cardBg: '#16161a'
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #0b0b0d;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0b0d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ca8a04;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #eab308;
+        }
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFE259 0%, #FFA751 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(22, 22, 26, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(202, 138, 4, 0.2);
+        }
+        .hero-overlay {
+            background: linear-gradient(180deg, rgba(11,11,13,0) 0%, rgba(11,11,13,0.8) 70%, rgba(11,11,13,1) 100%),
+                        linear-gradient(90deg, rgba(11,11,13,0.9) 0%, rgba(11,11,13,0.4) 50%, rgba(11,11,13,0.9) 100%);
+        }
+        .logo-glow {
+            filter: drop-shadow(0 0 8px rgba(234, 179, 8, 0.35));
+        }
+        .upload-progress-bar {
+            transition: width 0.2s ease;
+        }
+        .empty-state-icon {
+            filter: drop-shadow(0 0 20px rgba(234, 179, 8, 0.2));
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-gold-500 selection:text-black">
+
+    <!-- Navbar Header -->
+    <header id="mainNav" class="fixed top-0 left-0 w-full z-40 transition-all duration-300 glass-panel border-b border-gold-600/20 px-4 md:px-8 py-3 flex items-center justify-between">
+        <!-- Logo (tap 5x quickly to reveal Director Studio access) -->
+        <div id="logoTapZone" class="flex items-center gap-3 cursor-pointer select-none" onclick="handleLogoTap()">
+            <img src="logo.png" alt="دراميتك" class="w-10 h-10 md:w-12 md:h-12 object-contain logo-glow">
+            <div>
+                <h1 class="text-xl md:text-2xl font-black tracking-wider gold-gradient-text">DRAMATEK</h1>
+                <p class="text-[10px] text-gray-400 -mt-1 tracking-widest">DRAMA & AI STORIES</p>
+            </div>
+        </div>
+
+        <!-- Links Nav -->
+        <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-300">
+            <button onclick="scrollToTop()" class="hover:text-gold-400 transition-colors flex items-center gap-2"><i class="fa-solid fa-house"></i> الرئيسية</button>
+            <button onclick="filterCategory('الجميع')" class="hover:text-gold-400 transition-colors flex items-center gap-2"><i class="fa-solid fa-film"></i> جميع القصص</button>
+            <button onclick="checkSubscriptionAndOpen()" class="hover:text-gold-400 transition-colors flex items-center gap-2"><i class="fa-solid fa-star text-gold-400"></i> حزمة VIP</button>
+        </nav>
+
+        <!-- Right Side Actions -->
+        <div class="flex items-center gap-3">
+            <!-- Search Input -->
+            <div class="relative hidden sm:block">
+                <input type="text" id="searchInput" oninput="handleSearch()" placeholder="ابحث عن قصة أو مخرج..." class="bg-black/60 border border-gray-700 text-xs text-white rounded-full py-2 px-4 pl-8 focus:outline-none focus:border-gold-500 w-40 focus:w-60 transition-all">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+            </div>
+
+            <button id="subBadge" onclick="openSubscribeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-lock"></i>
+                <span id="subBadgeText">تفعيل الاشتراك</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Content Wrapper -->
+    <main class="pt-20 pb-16 min-h-screen">
+
+        <!-- Banner Hero Section -->
+        <section id="heroSection" class="relative w-full h-[70vh] md:h-[80vh] flex items-end justify-start p-6 md:p-16 mb-8 overflow-hidden hidden">
+            <!-- Background Image Poster -->
+            <div id="heroBg" class="absolute inset-0 bg-cover bg-center transition-all duration-700 transform scale-105"></div>
+            <!-- Shadow Overlay -->
+            <div class="absolute inset-0 hero-overlay"></div>
+
+            <!-- Content Hero -->
+            <div class="relative z-10 max-w-2xl space-y-4">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-gold-500/20 border border-gold-500/40 rounded-full text-gold-400 text-xs font-bold">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> إنتاج الذكاء الاصطناعي الحصري
+                </div>
+                <h1 id="heroTitle" class="text-3xl md:text-6xl font-black leading-tight gold-gradient-text drop-shadow-md"></h1>
+                <div class="flex items-center gap-4 text-xs md:text-sm text-gray-300 font-medium">
+                    <span id="heroDirector" class="text-gold-400"></span>
+                    <span>•</span>
+                    <span id="heroCategory" class="bg-gray-800 px-2 py-0.5 rounded"></span>
+                    <span>•</span>
+                    <span id="heroDuration"></span>
+                </div>
+                <p id="heroDesc" class="text-gray-300 text-sm md:text-base line-clamp-3 leading-relaxed"></p>
+                <!-- Hero Action Buttons -->
+                <div class="flex items-center gap-4 pt-2">
+                    <button id="heroPlayBtn" onclick="playHeroVideo()" class="bg-gold-500 hover:bg-gold-400 text-black font-black px-6 py-3 rounded-xl flex items-center gap-2 text-sm md:text-base transition-transform hover:scale-105 shadow-lg shadow-gold-500/20">
+                        <i class="fa-solid fa-play text-lg"></i> تشغيل القصة الآن
+                    </button>
+                    <button id="heroMoreInfo" onclick="showHeroDetails()" class="bg-gray-800/80 hover:bg-gray-700 text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 text-sm backdrop-blur transition">
+                        <i class="fa-solid fa-circle-info"></i> التفاصيل
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Empty State (shown when there are no stories yet) -->
+        <section id="emptyState" class="hidden flex-col items-center justify-center text-center px-6 py-20 gap-4">
+            <img src="logo.png" alt="دراميتك" class="w-24 h-24 object-contain empty-state-icon opacity-90">
+            <h2 class="text-xl md:text-2xl font-bold text-gray-200">لا توجد قصص منشورة بعد</h2>
+            <p class="text-gray-500 text-sm max-w-md">راح تظهر هنا أحدث قصص دراميتك أول ما يتم نشرها من استوديو المخرج.</p>
+        </section>
+
+        <!-- Loading State -->
+        <section id="loadingState" class="flex flex-col items-center justify-center text-center px-6 py-20 gap-3">
+            <i class="fa-solid fa-circle-notch fa-spin text-gold-500 text-3xl"></i>
+            <p class="text-gray-400 text-sm">جاري تحميل القصص...</p>
+        </section>
+
+        <!-- Categories Filter Bar -->
+        <section id="categoriesSection" class="px-4 md:px-12 mb-6 hidden">
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none" id="categoriesBar">
+                <!-- Categories populated via JS -->
+            </div>
+        </section>
+
+        <!-- Stories Section Grid / Sliders -->
+        <section id="storiesSection" class="px-4 md:px-12 space-y-10 hidden">
+            <!-- Row 1: الأكثر مشاهدة -->
+            <div>
+                <div class="flex items-center justify-between mb-4 border-r-4 border-gold-500 pr-3">
+                    <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-fire text-gold-400"></i> الأكثر مشاهدة هذا الأسبوع
+                    </h2>
+                </div>
+                <div id="topStoriesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                    <!-- Cards via JS -->
+                </div>
+            </div>
+
+            <!-- Row 2: قصص الذكاء الاصطناعي الجديدة -->
+            <div>
+                <div class="flex items-center justify-between mb-4 border-r-4 border-gold-500 pr-3">
+                    <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-clapperboard text-gold-400"></i> أحدث إصدارات دراميتك
+                    </h2>
+                </div>
+                <div id="allStoriesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                    <!-- Cards via JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Subscription Modal (تفعيل الاشتراك / متابعة الحسابات) -->
+    <div id="subscriptionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md hidden">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 md:p-8 text-center relative border border-gold-500/40 shadow-[0_0_50px_rgba(202,138,4,0.2)]">
+            <button onclick="closeSubscribeModal()" class="absolute top-4 left-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+
+            <div class="w-16 h-16 bg-gold-500/10 border border-gold-500/30 rounded-full flex items-center justify-center mx-auto mb-4 text-gold-400 text-3xl">
+                <i class="fa-solid fa-unlock-keyhole"></i>
+            </div>
+
+            <h3 class="text-2xl font-black gold-gradient-text mb-2">اشترك لمشاهدة جميع القصص</h3>
+            <p class="text-gray-300 text-xs md:text-sm mb-6 leading-relaxed">
+                الاشتراك مجاني بالكامل! قم بمتابعة حساباتنا الرسمية على منصات التواصل الاجتماعي لمرة واحدة فقط لفتح مكتبة أفلام وفيديوهات الذكاء الاصطناعي بدون حدود.
+            </p>
+
+            <div class="space-y-4 text-right mb-6">
+                <!-- Step 1: Instagram -->
+                <div id="stepInsta" class="flex items-center justify-between p-3 bg-black/50 rounded-xl border border-gray-800">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-brands fa-instagram text-2xl text-pink-500"></i>
+                        <div>
+                            <p class="text-sm font-bold">متابعة حساب إنستغرام</p>
+                            <p class="text-[11px] text-gray-400">@we8hr</p>
+                        </div>
+                    </div>
+                    <button onclick="followAction('insta')" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white text-xs px-4 py-2 rounded-lg font-bold transition">
+                        متابعة <i class="fa-solid fa-arrow-up-right-from-square text-[10px] mr-1"></i>
+                    </button>
+                </div>
+
+                <!-- Step 2: TikTok -->
+                <div id="stepTiktok" class="flex items-center justify-between p-3 bg-black/50 rounded-xl border border-gray-800">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-brands fa-tiktok text-2xl text-cyan-400"></i>
+                        <div>
+                            <p class="text-sm font-bold">متابعة حساب تيك توك</p>
+                            <p class="text-[11px] text-gray-400">@dramiticai</p>
+                        </div>
+                    </div>
+                    <button onclick="followAction('tiktok')" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-4 py-2 rounded-lg font-bold border border-gray-600 transition">
+                        متابعة <i class="fa-solid fa-arrow-up-right-from-square text-[10px] mr-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Confirm Subscription Button -->
+            <button id="confirmSubBtn" onclick="verifyAndActivateSub()" class="w-full bg-gold-500 hover:bg-gold-400 text-black font-black py-3 rounded-xl transition shadow-lg opacity-50 cursor-not-allowed" disabled>
+                تم المتابعة - تفعيل المشاهدة الآن
+            </button>
+            <p class="text-[10px] text-gray-500 mt-3">تطبيق دراميتك يضمن حفظ اشتراكك في هذا الجهاز دائماً.</p>
+        </div>
+    </div>
+
+    <!-- Modal: Director Mode (إضافة قصة جديدة وحماية بكلمة سر) -->
+    <!-- Hidden by default and only reachable via 5 quick taps on the logo -->
+    <div id="directorModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md hidden">
+        <div class="glass-panel w-full max-w-2xl rounded-2xl p-6 md:p-8 relative border border-gold-500/40 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeDirectorModal()" class="absolute top-4 left-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+
+            <!-- Director Auth Check -->
+            <div id="directorAuthSection" class="text-center py-8">
+                <div class="w-16 h-16 bg-gold-500/10 border border-gold-500/30 rounded-full flex items-center justify-center mx-auto mb-4 text-gold-400 text-3xl">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+                <h3 class="text-2xl font-black gold-gradient-text mb-2">تسجيل دخول المخرج</h3>
+                <p class="text-gray-400 text-xs md:text-sm mb-6">أدخل الرمز السري الخاص بإدارة ونشر قصص الذكاء الاصطناعي</p>
+
+                <div class="max-w-xs mx-auto space-y-4">
+                    <input type="password" id="directorPassInput" placeholder="الرمز السري" inputmode="numeric" class="w-full bg-black/60 border border-gray-700 text-center text-white rounded-xl py-3 px-4 focus:outline-none focus:border-gold-500">
+                    <button onclick="checkDirectorPass()" class="w-full bg-gold-500 hover:bg-gold-400 text-black font-bold py-3 rounded-xl transition">
+                        دخول لوحة التحكم
+                    </button>
+                    <p id="passError" class="text-red-500 text-xs hidden">الرمز السري غير صحيح!</p>
+                </div>
+            </div>
+
+            <!-- Director Form (Shown after password check) -->
+            <div id="directorFormSection" class="hidden space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                    <h3 class="text-xl font-bold text-gold-400 flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle"></i> نشر قصة فيديو AI جديدة
+                    </h3>
+                    <span class="text-xs text-gray-400">وضع المخرج المعتمد</span>
+                </div>
+
+                <form id="addStoryForm" onsubmit="handleAddNewStory(event)" class="space-y-4 text-xs md:text-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-400 mb-1">عنوان القصة</label>
+                            <input type="text" id="inputTitle" required placeholder="مثال: ليلة صامتة في نيويورك" class="w-full bg-black/60 border border-gray-700 rounded-lg p-2.5 text-white focus:border-gold-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">اسم المخرج / صانع العمل</label>
+                            <input type="text" id="inputDirector" required placeholder="مثال: المخرج علي الكعبي" class="w-full bg-black/60 border border-gray-700 rounded-lg p-2.5 text-white focus:border-gold-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-400 mb-1">التصنيف</label>
+                            <select id="inputCategory" class="w-full bg-black/60 border border-gray-700 rounded-lg p-2.5 text-white focus:border-gold-500 focus:outline-none">
+                                <option value="رعب وغامض">رعب وغامض</option>
+                                <option value="دراما وشغف">دراما وشغف</option>
+                                <option value="خيال علمي">خيال علمي</option>
+                                <option value="تاريخ وأساطير">تاريخ وأساطير</option>
+                                <option value="أكشن ومغامرة">أكشن ومغامرة</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">مدة الفيديو (بالدقائق)</label>
+                            <input type="text" id="inputDuration" required placeholder="مثال: 12 دقيقة" class="w-full bg-black/60 border border-gray-700 rounded-lg p-2.5 text-white focus:border-gold-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-400 mb-1">صورة الغلاف (ارفع مباشرة من جهازك)</label>
+                        <input type="file" id="inputPosterFile" accept="image/*" required class="w-full bg-black/60 border border-gray-700 rounded-lg p-2.5 text-white text-xs focus:border-gold-500 focus:outline-none file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-gold-500 file:text-black file:font-bold file:cursor-pointer">
+                        <div id="posterPreviewWrap" class="hidden mt-2">
+                            <img id="posterPreview" class="h-24 rounded-lg border border-gray-700 object-cover">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-400 mb-1">ملف الفيديو (ارفع مباشرة من جهازك)</label>
+                        <input type="file" id="inputVideoFile" accept="video/*" required class="w-full bg-black/60 border border-gray-700 rounded-lg p-2.5 text-white text-xs focus:border-gold-500 focus:outline-none file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-gold-500 file:text-black file:font-bold file:cursor-pointer">
+                        <p id="videoFileName" class="text-[11px] text-gray-500 mt-1"></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-400 mb-1">قصة وفكرة العمل (الوصف)</label>
+                        <textarea id="inputDesc" rows="3" required placeholder="اكتب ملخصاً مشوقاً للقصة..." class="w-full bg-black/60 border border-gray-700 rounded-lg p-2.5 text-white focus:border-gold-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <!-- Upload progress -->
+                    <div id="uploadProgressWrap" class="hidden space-y-2">
+                        <div class="flex items-center justify-between text-[11px] text-gray-400">
+                            <span id="uploadStatusText">جاري الرفع...</span>
+                            <span id="uploadPercentText">0%</span>
+                        </div>
+                        <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div id="uploadProgressBar" class="upload-progress-bar h-full bg-gold-500 rounded-full" style="width:0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <button type="submit" id="submitStoryBtn" class="flex-1 bg-gold-500 hover:bg-gold-400 text-black font-bold py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            نشر القصة الآن
+                        </button>
+                        <button type="button" onclick="closeDirectorModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold px-6 py-3 rounded-xl transition">
+                            إلغاء
+                        </button>
+                    </div>
+                    <p id="formError" class="text-red-500 text-xs hidden"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Player Modal / Fullscreen Viewer -->
+    <div id="playerModal" class="fixed inset-0 z-50 bg-black flex flex-col hidden">
+        <!-- Player Header -->
+        <div class="p-4 bg-gradient-to-b from-black/90 to-transparent flex items-center justify-between absolute top-0 left-0 w-full z-20">
+            <div class="flex items-center gap-3">
+                <button onclick="closeVideoPlayer()" class="text-white hover:text-gold-400 bg-black/50 p-2 rounded-full transition">
+                    <i class="fa-solid fa-arrow-right text-xl"></i>
+                </button>
+                <div>
+                    <h2 id="playerTitle" class="text-base md:text-lg font-bold text-white">عنوان القصة</h2>
+                    <p id="playerSub" class="text-xs text-gold-400">إخراج: المخرج</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="bg-gold-500/20 text-gold-400 text-xs px-2.5 py-1 rounded-full border border-gold-500/30">
+                    <i class="fa-solid fa-circle text-[8px] text-red-500 animate-pulse ml-1"></i> Dramatek Player
+                </span>
+            </div>
+        </div>
+
+        <!-- Video Frame -->
+        <div class="flex-1 flex items-center justify-center bg-black relative">
+            <video id="mainVideo" controls class="w-full h-full max-h-screen object-contain" poster="">
+                <source id="videoSource" src="" type="video/mp4">
+                متصفحك لا يدعم تشغيل هذا الفيديو.
+            </video>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 bg-black/80 py-8 px-4 text-center text-xs text-gray-500">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <img src="logo.png" alt="دراميتك" class="w-6 h-6 object-contain">
+                <span class="font-bold text-gray-300">دراميتك DRAMATEK © 2026</span>
+                <span>- منصة سينما الذكاء الاصطناعي</span>
+            </div>
+            <div class="flex items-center gap-6 text-gray-400">
+                <a href="https://www.instagram.com/we8hr" target="_blank" rel="noopener" class="hover:text-gold-400 flex items-center gap-1"><i class="fa-brands fa-instagram"></i> إنستغرام</a>
+                <a href="https://www.tiktok.com/@dramiticai" target="_blank" rel="noopener" class="hover:text-gold-400 flex items-center gap-1"><i class="fa-brands fa-tiktok"></i> تيك توك</a>
+                <a href="#" onclick="openSubscribeModal(); return false;" class="hover:text-gold-400">حالة الاشتراك</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Application Script Engine -->
+    <script>
+        // ====== Supabase Configuration ======
+        const SUPABASE_URL = 'https://vybgmzimfmkemgrkbnij.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5YmdtemltZm1rZW1ncmtibmlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzODEwNzksImV4cCI6MjEwMTk1NzA3OX0.cZkVUrpk2UP-eQ7eSvVwHzptvllT_yBCSlLhPexZh3c';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const STORIES_TABLE = 'stories';
+        const POSTERS_BUCKET = 'posters';
+        const VIDEOS_BUCKET = 'videos';
+
+        // Director secret code (kept client-side for simplicity; see note below)
+        const DIRECTOR_CODE = '2003';
+
+        // Categories List
+        const categories = ["الجميع", "رعب وغامض", "دراما وشغف", "خيال علمي", "تاريخ وأساطير", "أكشن ومغامرة"];
+
+        // State Management
+        let stories = [];
+        let isSubscribed = localStorage.getItem('dramatek_subscribed') === 'true';
+        let instaFollowed = false;
+        let tiktokFollowed = false;
+        let currentCategory = "الجميع";
+        let logoTapCount = 0;
+        let logoTapTimer = null;
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+            loadStories();
+            updateSubUI();
+        });
+
+        // ====== Load stories from Supabase ======
+        async function loadStories() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('categoriesSection').classList.add('hidden');
+            document.getElementById('storiesSection').classList.add('hidden');
+            document.getElementById('heroSection').classList.add('hidden');
+
+            const { data, error } = await supabaseClient
+                .from(STORIES_TABLE)
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            document.getElementById('loadingState').classList.add('hidden');
+
+            if (error) {
+                console.error('Error loading stories:', error);
+                stories = [];
+            } else {
+                stories = data || [];
+            }
+
+            if (stories.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('categoriesSection').classList.add('hidden');
+                document.getElementById('storiesSection').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('categoriesSection').classList.remove('hidden');
+            document.getElementById('storiesSection').classList.remove('hidden');
+            renderHero();
+            renderStories();
+        }
+
+        // Render Hero from the latest/top story
+        function renderHero() {
+            if (stories.length === 0) return;
+            const hero = stories[0];
+            document.getElementById('heroSection').classList.remove('hidden');
+            document.getElementById('heroBg').style.backgroundImage = `url('${hero.poster_url}')`;
+            document.getElementById('heroTitle').innerText = hero.title;
+            document.getElementById('heroDirector').innerHTML = `<i class="fa-solid fa-user-ninja"></i> إخراج: ${hero.director}`;
+            document.getElementById('heroCategory').innerText = hero.category;
+            document.getElementById('heroDuration').innerHTML = `<i class="fa-regular fa-clock"></i> ${hero.duration}`;
+            document.getElementById('heroDesc').innerText = hero.description;
+        }
+
+        // Render Categories Bar
+        function renderCategories() {
+            const container = document.getElementById('categoriesBar');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="filterCategory('${cat}')" 
+                    class="px-4 py-1.5 rounded-full text-xs md:text-sm font-bold whitespace-nowrap transition-all ${currentCategory === cat ? 'bg-gold-500 text-black shadow-md shadow-gold-500/20' : 'bg-gray-800/80 text-gray-300 hover:bg-gray-700'}">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        // Render Stories Grid
+        function renderStories(filterText = '') {
+            const topGrid = document.getElementById('topStoriesGrid');
+            const allGrid = document.getElementById('allStoriesGrid');
+
+            let filtered = stories;
+
+            if (currentCategory !== "الجميع") {
+                filtered = filtered.filter(s => s.category === currentCategory);
+            }
+
+            if (filterText) {
+                filtered = filtered.filter(s => 
+                    s.title.toLowerCase().includes(filterText.toLowerCase()) || 
+                    s.director.toLowerCase().includes(filterText.toLowerCase())
+                );
+            }
+
+            if (filtered.length === 0) {
+                const emptyMsg = `<div class="col-span-full text-center text-gray-500 text-sm py-10">ما فيه نتائج مطابقة</div>`;
+                topGrid.innerHTML = emptyMsg;
+                allGrid.innerHTML = emptyMsg;
+                return;
+            }
+
+            const storyCards = filtered.map((story) => `
+                <div class="group relative bg-cardBg rounded-xl overflow-hidden border border-gray-800 hover:border-gold-500/50 transition-all duration-300 hover:-translate-y-1.5 shadow-lg flex flex-col justify-between">
+                    <!-- Image Poster -->
+                    <div class="relative aspect-[2/3] overflow-hidden cursor-pointer" onclick="handleStoryClick('${story.id}')">
+                        <img src="${story.poster_url}" alt="${story.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+                        
+                        <!-- Play Icon Overlay -->
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="w-12 h-12 bg-gold-500/90 rounded-full flex items-center justify-center text-black text-xl shadow-lg transform scale-75 group-hover:scale-100 transition-transform">
+                                <i class="fa-solid fa-play ml-1"></i>
+                            </div>
+                        </div>
+
+                        <!-- Badge Duration -->
+                        <span class="absolute top-2 left-2 bg-black/70 backdrop-blur text-[10px] text-gray-200 px-2 py-0.5 rounded font-bold">
+                            ${story.duration}
+                        </span>
+
+                        <!-- Lock Badge if not subbed -->
+                        ${!isSubscribed ? `
+                            <span class="absolute top-2 right-2 bg-red-600/90 text-white text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-lock text-[9px]"></i> اشتراك
+                            </span>
+                        ` : ''}
+                    </div>
+
+                    <!-- Details -->
+                    <div class="p-3 flex-1 flex flex-col justify-between">
+                        <div>
+                            <span class="text-[10px] text-gold-400 font-semibold uppercase tracking-wider block mb-1">${story.category}</span>
+                            <h3 class="font-bold text-sm text-white line-clamp-1 group-hover:text-gold-400 transition-colors">${story.title}</h3>
+                            <p class="text-[11px] text-gray-400 mt-1"><i class="fa-solid fa-clapperboard text-[10px] ml-1"></i>${story.director}</p>
+                        </div>
+                        <div class="mt-3 pt-2 border-t border-gray-800/80 flex items-center justify-between text-[11px] text-gray-500">
+                            <span><i class="fa-solid fa-eye ml-1"></i>${story.views || 0}</span>
+                            <button onclick="handleStoryClick('${story.id}')" class="text-gold-400 hover:underline font-bold">مشاهدة</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            topGrid.innerHTML = storyCards;
+            allGrid.innerHTML = storyCards;
+        }
+
+        // Filter Action
+        function filterCategory(cat) {
+            currentCategory = cat;
+            renderCategories();
+            renderStories();
+        }
+
+        // Search Action
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value;
+            renderStories(query);
+        }
+
+        // Handle Story Play / Subscription Lock
+        function handleStoryClick(id) {
+            if (!isSubscribed) {
+                openSubscribeModal();
+                return;
+            }
+            const story = stories.find(s => String(s.id) === String(id));
+            if (story) {
+                openVideoPlayer(story);
+            }
+        }
+
+        function playHeroVideo() {
+            if (stories.length > 0) handleStoryClick(stories[0].id);
+        }
+
+        function showHeroDetails() {
+            if (stories.length === 0) return;
+            const story = stories[0];
+            alert(`القصة: ${story.title}\nالمخرج: ${story.director}\nالتصنيف: ${story.category}\nالوصف: ${story.description}`);
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Subscription Modal Logic
+        function openSubscribeModal() {
+            document.getElementById('subscriptionModal').classList.remove('hidden');
+        }
+
+        function closeSubscribeModal() {
+            document.getElementById('subscriptionModal').classList.add('hidden');
+        }
+
+        function followAction(type) {
+            if (type === 'insta') {
+                window.open('https://www.instagram.com/we8hr', '_blank');
+                instaFollowed = true;
+                document.getElementById('stepInsta').classList.add('border-green-500/50', 'bg-green-950/20');
+            } else if (type === 'tiktok') {
+                window.open('https://www.tiktok.com/@dramiticai', '_blank');
+                tiktokFollowed = true;
+                document.getElementById('stepTiktok').classList.add('border-green-500/50', 'bg-green-950/20');
+            }
+
+            // Enable button if both clicked
+            if (instaFollowed && tiktokFollowed) {
+                const btn = document.getElementById('confirmSubBtn');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btn.classList.add('hover:bg-gold-400', 'shadow-gold-500/30');
+            }
+        }
+
+        function verifyAndActivateSub() {
+            isSubscribed = true;
+            localStorage.setItem('dramatek_subscribed', 'true');
+            updateSubUI();
+            closeSubscribeModal();
+            renderStories();
+            
+            // Notification
+            alert('تهانينا! تم تفعيل اشتراكك في دراميتك بنجاح. يمكنك الآن مشاهدة جميع القصص مجاناً!');
+        }
+
+        function updateSubUI() {
+            const badge = document.getElementById('subBadgeText');
+            const btn = document.getElementById('subBadge');
+            if (isSubscribed) {
+                badge.innerText = "اشتراك مفعل";
+                btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                btn.querySelector('i').className = "fa-solid fa-circle-check";
+            }
+        }
+
+        function checkSubscriptionAndOpen() {
+            if (isSubscribed) {
+                alert('حسابك مفعل في حزمة VIP مسبقاً!');
+            } else {
+                openSubscribeModal();
+            }
+        }
+
+        // ====== Hidden Director Studio Access ======
+        // Tap the logo 5 times within 2 seconds to reveal the login modal.
+        function handleLogoTap() {
+            logoTapCount++;
+            if (logoTapTimer) clearTimeout(logoTapTimer);
+            logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 2000);
+
+            if (logoTapCount >= 5) {
+                logoTapCount = 0;
+                clearTimeout(logoTapTimer);
+                openDirectorModal();
+            }
+        }
+
+        function openDirectorModal() {
+            document.getElementById('directorModal').classList.remove('hidden');
+        }
+
+        function closeDirectorModal() {
+            document.getElementById('directorModal').classList.add('hidden');
+            // Reset to auth screen for next time
+            document.getElementById('directorAuthSection').classList.remove('hidden');
+            document.getElementById('directorFormSection').classList.add('hidden');
+            document.getElementById('directorPassInput').value = '';
+            document.getElementById('passError').classList.add('hidden');
+        }
+
+        function checkDirectorPass() {
+            const pass = document.getElementById('directorPassInput').value;
+            if (pass === DIRECTOR_CODE) {
+                document.getElementById('directorAuthSection').classList.add('hidden');
+                document.getElementById('directorFormSection').classList.remove('hidden');
+                document.getElementById('passError').classList.add('hidden');
+            } else {
+                document.getElementById('passError').classList.remove('hidden');
+            }
+        }
+
+        // Live poster preview
+        document.addEventListener('DOMContentLoaded', () => {
+            const posterInput = document.getElementById('inputPosterFile');
+            if (posterInput) {
+                posterInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const preview = document.getElementById('posterPreview');
+                        preview.src = URL.createObjectURL(file);
+                        document.getElementById('posterPreviewWrap').classList.remove('hidden');
+                    }
+                });
+            }
+            const videoInput = document.getElementById('inputVideoFile');
+            if (videoInput) {
+                videoInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    document.getElementById('videoFileName').innerText = file ? `${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)` : '';
+                });
+            }
+        });
+
+        // ====== Publish new story: upload files to Supabase Storage, then insert row ======
+        async function handleAddNewStory(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('inputTitle').value.trim();
+            const director = document.getElementById('inputDirector').value.trim();
+            const category = document.getElementById('inputCategory').value;
+            const duration = document.getElementById('inputDuration').value.trim();
+            const description = document.getElementById('inputDesc').value.trim();
+            const posterFile = document.getElementById('inputPosterFile').files[0];
+            const videoFile = document.getElementById('inputVideoFile').files[0];
+
+            const formError = document.getElementById('formError');
+            formError.classList.add('hidden');
+
+            if (!posterFile || !videoFile) {
+                formError.innerText = 'الرجاء اختيار صورة الغلاف وملف الفيديو.';
+                formError.classList.remove('hidden');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitStoryBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'جاري النشر...';
+
+            const progressWrap = document.getElementById('uploadProgressWrap');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const progressPct = document.getElementById('uploadPercentText');
+            const statusText = document.getElementById('uploadStatusText');
+            progressWrap.classList.remove('hidden');
+
+            try {
+                // 1. Upload poster
+                statusText.innerText = 'جاري رفع صورة الغلاف...';
+                progressBar.style.width = '10%';
+                progressPct.innerText = '10%';
+
+                const posterExt = posterFile.name.split('.').pop();
+                const posterPath = `${Date.now()}_${Math.random().toString(36).slice(2)}.${posterExt}`;
+                const { error: posterError } = await supabaseClient.storage
+                    .from(POSTERS_BUCKET)
+                    .upload(posterPath, posterFile);
+
+                if (posterError) throw new Error('فشل رفع صورة الغلاف: ' + posterError.message);
+
+                const { data: posterUrlData } = supabaseClient.storage
+                    .from(POSTERS_BUCKET)
+                    .getPublicUrl(posterPath);
+
+                progressBar.style.width = '40%';
+                progressPct.innerText = '40%';
+
+                // 2. Upload video
+                statusText.innerText = 'جاري رفع الفيديو (قد يستغرق وقتاً حسب حجم الملف)...';
+                const videoExt = videoFile.name.split('.').pop();
+                const videoPath = `${Date.now()}_${Math.random().toString(36).slice(2)}.${videoExt}`;
+                const { error: videoError } = await supabaseClient.storage
+                    .from(VIDEOS_BUCKET)
+                    .upload(videoPath, videoFile);
+
+                if (videoError) throw new Error('فشل رفع الفيديو: ' + videoError.message);
+
+                const { data: videoUrlData } = supabaseClient.storage
+                    .from(VIDEOS_BUCKET)
+                    .getPublicUrl(videoPath);
+
+                progressBar.style.width = '80%';
+                progressPct.innerText = '80%';
+
+                // 3. Insert story row
+                statusText.innerText = 'جاري حفظ بيانات القصة...';
+                const { error: insertError } = await supabaseClient
+                    .from(STORIES_TABLE)
+                    .insert([{
+                        title,
+                        director,
+                        category,
+                        duration,
+                        description,
+                        poster_url: posterUrlData.publicUrl,
+                        video_url: videoUrlData.publicUrl,
+                        views: 0
+                    }]);
+
+                if (insertError) throw new Error('فشل حفظ القصة: ' + insertError.message);
+
+                progressBar.style.width = '100%';
+                progressPct.innerText = '100%';
+                statusText.innerText = 'تم بنجاح!';
+
+                await loadStories();
+                closeDirectorModal();
+                document.getElementById('addStoryForm').reset();
+                document.getElementById('posterPreviewWrap').classList.add('hidden');
+                document.getElementById('videoFileName').innerText = '';
+                alert('تم نشر القصة بنجاح في تطبيق دراميتك!');
+
+            } catch (err) {
+                console.error(err);
+                formError.innerText = err.message || 'حدث خطأ غير متوقع أثناء النشر.';
+                formError.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'نشر القصة الآن';
+                progressWrap.classList.add('hidden');
+                progressBar.style.width = '0%';
+            }
+        }
+
+        // Video Player Modal
+        function openVideoPlayer(story) {
+            const playerModal = document.getElementById('playerModal');
+            const video = document.getElementById('mainVideo');
+            const videoSrc = document.getElementById('videoSource');
+
+            document.getElementById('playerTitle').innerText = story.title;
+            document.getElementById('playerSub').innerText = `إخراج: ${story.director} • ${story.category}`;
+
+            videoSrc.src = story.video_url;
+            video.load();
+            playerModal.classList.remove('hidden');
+            video.play();
+        }
+
+        function closeVideoPlayer() {
+            const playerModal = document.getElementById('playerModal');
+            const video = document.getElementById('mainVideo');
+            video.pause();
+            playerModal.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
