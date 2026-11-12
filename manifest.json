@@ -1,1 +1,33 @@
-{"name":"دراميتك | Dramatek","short_name":"دراميتك","description":"منصة مسلسلات الذكاء الاصطناعي","lang":"ar","dir":"rtl","start_url":"./index.html","scope":"./","display":"standalone","orientation":"portrait","background_color":"#0b0b0d","theme_color":"#0b0b0d","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
+{
+  "id": "./",
+  "name": "دراميتك | Dramatek",
+  "short_name": "دراميتك",
+  "description": "مسلسلات وقصص وتواصل",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#0b0b0d",
+  "icons": [
+    {
+      "src": "icon-192-v2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
